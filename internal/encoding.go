@@ -255,13 +255,22 @@ func renameMapKeys(m map[string]interface{}, v interface{}) map[string]interface
 	renamed := rename(m, rv.Interface())
 	for i := 0; i < rv.NumField(); i++ {
 		sf := rv.Type().Field(i)
-		fv := renamed[sf.Name]
+
+		renamedKey := sf.Name
+		if jsonTagStr, found := sf.Tag.Lookup("json"); found {
+			name, _ := processStructTag(jsonTagStr)
+			if name != "" {
+				renamedKey = name
+			}
+		}
+
+		fv := renamed[renamedKey]
 		ft := getElemType(sf.Type)
 
 		fMap, isMap := fv.(map[string]interface{})
 		if isMap && ft.Kind() == reflect.Struct {
 			converted := renameMapKeys(fMap, rv.Field(i).Interface())
-			renamed[sf.Name] = converted
+			renamed[renamedKey] = converted
 		}
 	}
 	return renamed
