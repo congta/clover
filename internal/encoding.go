@@ -192,6 +192,7 @@ func createRenameMap(rv reflect.Value, renameMap map[string]string) map[string]s
 			name, _ := processStructTag(jsonTagStr)
 			if name != "" {
 				renameTo = name
+				renameFrom = name
 			}
 		}
 
@@ -199,7 +200,7 @@ func createRenameMap(rv reflect.Value, renameMap map[string]string) map[string]s
 		if found {
 			name, _ := processStructTag(bsonTagStr)
 			if name != "" {
-				renameTo = name
+				renameFrom = name
 			}
 		}
 
