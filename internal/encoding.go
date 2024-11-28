@@ -51,6 +51,14 @@ func normalizeStruct(structValue reflect.Value) (map[string]interface{}, error) 
 
 			cloverTag := fieldType.Tag.Get("clover")
 			name, omitempty := processStructTag(cloverTag)
+			if name == "" {
+				bsonTag := fieldType.Tag.Get("bson")
+				name, omitempty = processStructTag(bsonTag)
+			}
+			if name == "" {
+				jsonTag := fieldType.Tag.Get("json")
+				name, omitempty = processStructTag(jsonTag)
+			}
 			if name != "" {
 				fieldName = name
 			}
@@ -182,6 +190,14 @@ func createRenameMap(rv reflect.Value, renameMap map[string]string) map[string]s
 		jsonTagStr, found := fieldType.Tag.Lookup("json")
 		if found {
 			name, _ := processStructTag(jsonTagStr)
+			if name != "" {
+				renameTo = name
+			}
+		}
+
+		bsonTagStr, found := fieldType.Tag.Lookup("bson")
+		if found {
+			name, _ := processStructTag(bsonTagStr)
 			if name != "" {
 				renameTo = name
 			}
