@@ -37,6 +37,17 @@ type TestStruct2 struct {
 	Data        []byte    `clover:",omitempty"`
 }
 
+type BsonStruct struct {
+	CamelCase int    `bson:"camel_case" json:"camelCase"`
+	Normal    string `bson:"normal" json:"normal"`
+}
+
+type TestStruct3 struct {
+	CamelCase   int         `bson:"camel_case" json:"camelCase"`
+	Normal      string      `bson:"normal" json:"normal"`
+	NestedCamel *BsonStruct `bson:"nested_camel" json:"nestedCamel"`
+}
+
 func TestNormalize(t *testing.T) {
 	date := time.Date(2020, 01, 1, 0, 0, 0, 0, time.UTC)
 
@@ -124,6 +135,43 @@ func TestNormalize3(t *testing.T) {
 	require.Nil(t, m["Data"])
 	require.Nil(t, m["MapField"])
 	require.Nil(t, m["IntPtr"])
+}
+
+func TestNormalize4(t *testing.T) {
+	var x = 100
+
+	s := &TestStruct3{
+		CamelCase: x,
+		Normal:    "normal",
+		NestedCamel: &BsonStruct{
+			CamelCase: x + 1,
+			Normal:    "normal-b",
+		},
+	}
+
+	ns, err := Normalize(s)
+	require.NoError(t, err)
+
+	require.IsType(t, ns, map[string]interface{}{})
+
+	m := ns.(map[string]interface{})
+	require.Equal(t, m["camel_case"], int64(x))
+	require.Equal(t, m["normal"], "normal")
+	require.IsType(t, m["nested_camel"], map[string]interface{}{})
+
+	nested, _ := m["nested_camel"].(map[string]interface{})
+	require.Equal(t, nested["camel_case"], int64(x+1))
+	require.Equal(t, nested["normal"], "normal-b")
+
+	s1 := &TestStruct3{}
+	err = Convert(m, s1)
+	require.NoError(t, err)
+
+	require.Equal(t, s1.Normal, "normal")
+	require.Equal(t, s1.CamelCase, x)
+	require.NotNil(t, s1.NestedCamel)
+	require.Equal(t, s1.NestedCamel.Normal, "normal-b")
+	require.Equal(t, s1.NestedCamel.CamelCase, x+1)
 }
 
 func TestEncodeDecode(t *testing.T) {

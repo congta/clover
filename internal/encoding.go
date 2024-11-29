@@ -246,8 +246,23 @@ func getElemType(rt reflect.Type) reflect.Type {
 	return rt
 }
 
+func getElemValueAndTypeIncludingNil(v interface{}) (reflect.Value, reflect.Type) {
+	rv := reflect.ValueOf(v)
+	rt := reflect.TypeOf(v)
+
+	for rt.Kind() == reflect.Ptr {
+		rt = rt.Elem()
+		if rv.IsNil() {
+			rv = reflect.New(rt).Elem()
+		} else {
+			rv = rv.Elem()
+		}
+	}
+	return rv, rt
+}
+
 func renameMapKeys(m map[string]interface{}, v interface{}) map[string]interface{} {
-	rv, rt := getElemValueAndType(v)
+	rv, rt := getElemValueAndTypeIncludingNil(v)
 	if rt.Kind() != reflect.Struct {
 		return m
 	}
