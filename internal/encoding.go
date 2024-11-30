@@ -63,6 +63,10 @@ func normalizeStruct(structValue reflect.Value) (map[string]interface{}, error) 
 				fieldName = name
 			}
 
+			if fieldName == "-" {
+				continue
+			}
+
 			if !omitempty || !isEmptyValue(fieldValue) {
 				normalized, err := Normalize(structValue.Field(i).Interface())
 				if err != nil {

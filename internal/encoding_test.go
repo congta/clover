@@ -46,6 +46,7 @@ type TestStruct3 struct {
 	CamelCase   int         `bson:"camel_case" json:"camelCase"`
 	Normal      string      `bson:"normal" json:"normal"`
 	NestedCamel *BsonStruct `bson:"nested_camel" json:"nestedCamel"`
+	Ignore      string      `bson:"-" json:"-"`
 }
 
 func TestNormalize(t *testing.T) {
@@ -147,6 +148,7 @@ func TestNormalize4(t *testing.T) {
 			CamelCase: x + 1,
 			Normal:    "normal-b",
 		},
+		Ignore: "hello",
 	}
 
 	ns, err := Normalize(s)
@@ -157,6 +159,8 @@ func TestNormalize4(t *testing.T) {
 	m := ns.(map[string]interface{})
 	require.Equal(t, m["camel_case"], int64(x))
 	require.Equal(t, m["normal"], "normal")
+	require.Nil(t, m["Ignore"])
+	require.Nil(t, m["-"])
 	require.IsType(t, m["nested_camel"], map[string]interface{}{})
 
 	nested, _ := m["nested_camel"].(map[string]interface{})
