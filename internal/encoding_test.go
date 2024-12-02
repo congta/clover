@@ -43,10 +43,14 @@ type BsonStruct struct {
 }
 
 type TestStruct3 struct {
-	CamelCase   int         `bson:"camel_case" json:"camelCase"`
-	Normal      string      `bson:"normal" json:"normal"`
-	NestedCamel *BsonStruct `bson:"nested_camel" json:"nestedCamel"`
-	Ignore      string      `bson:"-" json:"-"`
+	CamelCase     int             `bson:"camel_case" json:"camelCase"`
+	Normal        string          `bson:"normal" json:"normal"`
+	NestedCamel   *BsonStruct     `bson:"nested_camel" json:"nestedCamel"`
+	NestedCamels0 []*BsonStruct   `bson:"nested_camels0" json:"nestedCamels0"`
+	NestedCamels1 []BsonStruct    `bson:"nested_camels1" json:"nestedCamels1"`
+	NestedCamels2 [][]*BsonStruct `bson:"nested_camels2" json:"nestedCamels2"`
+	NestedCamels3 [][]BsonStruct  `bson:"nested_camels3" json:"nestedCamels3"`
+	Ignore        string          `bson:"-" json:"-"`
 }
 
 func TestNormalize(t *testing.T) {
@@ -148,6 +152,30 @@ func TestNormalize4(t *testing.T) {
 			CamelCase: x + 1,
 			Normal:    "normal-b",
 		},
+		NestedCamels0: []*BsonStruct{
+			{
+				CamelCase: x + 2,
+			},
+		},
+		NestedCamels1: []BsonStruct{
+			{
+				CamelCase: x + 3,
+			},
+		},
+		NestedCamels2: [][]*BsonStruct{
+			{
+				{
+					CamelCase: x + 4,
+				},
+			},
+		},
+		NestedCamels3: [][]BsonStruct{
+			{
+				{
+					CamelCase: x + 5,
+				},
+			},
+		},
 		Ignore: "hello",
 	}
 
@@ -167,6 +195,14 @@ func TestNormalize4(t *testing.T) {
 	require.Equal(t, nested["camel_case"], int64(x+1))
 	require.Equal(t, nested["normal"], "normal-b")
 
+	nestedSlice, _ := m["nested_camels0"].([]interface{})
+	nested, _ = nestedSlice[0].(map[string]interface{})
+	require.Equal(t, nested["camel_case"], int64(x+2))
+
+	nestedSlice, _ = m["nested_camels1"].([]interface{})
+	nested, _ = nestedSlice[0].(map[string]interface{})
+	require.Equal(t, nested["camel_case"], int64(x+3))
+
 	s1 := &TestStruct3{}
 	err = Convert(m, s1)
 	require.NoError(t, err)
@@ -176,6 +212,10 @@ func TestNormalize4(t *testing.T) {
 	require.NotNil(t, s1.NestedCamel)
 	require.Equal(t, s1.NestedCamel.Normal, "normal-b")
 	require.Equal(t, s1.NestedCamel.CamelCase, x+1)
+	require.Equal(t, s1.NestedCamels0[0].CamelCase, x+2)
+	require.Equal(t, s1.NestedCamels1[0].CamelCase, x+3)
+	require.Equal(t, s1.NestedCamels2[0][0].CamelCase, x+4)
+	require.Equal(t, s1.NestedCamels3[0][0].CamelCase, x+5)
 }
 
 func TestEncodeDecode(t *testing.T) {

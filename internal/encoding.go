@@ -265,6 +265,27 @@ func getElemValueAndTypeIncludingNil(v interface{}) (reflect.Value, reflect.Type
 	return rv, rt
 }
 
+// todo(feicu) not sure about this implement
+func getElemValueAndTypeFromSlice(v interface{}) (reflect.Value, reflect.Type) {
+	rv := reflect.ValueOf(v)
+	rt := reflect.TypeOf(v)
+
+	if rt.Kind() == reflect.Slice {
+		rt = rt.Elem()
+	}
+	if rt.Kind() == reflect.Ptr {
+		rt = rt.Elem()
+		if rv.IsNil() {
+			rv = reflect.New(rt).Elem()
+		} else {
+			rv = rv.Elem()
+		}
+	} else {
+		rv = reflect.New(rt).Elem()
+	}
+	return rv, rt
+}
+
 func renameMapKeys(m map[string]interface{}, v interface{}) map[string]interface{} {
 	rv, rt := getElemValueAndTypeIncludingNil(v)
 	if rt.Kind() != reflect.Struct {
@@ -291,8 +312,31 @@ func renameMapKeys(m map[string]interface{}, v interface{}) map[string]interface
 			converted := renameMapKeys(fMap, rv.Field(i).Interface())
 			renamed[renamedKey] = converted
 		}
+
+		fSlice, isSlice := fv.([]interface{})
+		if isSlice && ft.Kind() == reflect.Slice {
+			for j := 0; j < len(fSlice); j++ {
+				fSlice[j] = renameSliceItemKeys(fSlice[j], rv.Field(i).Interface())
+			}
+			renamed[renamedKey] = fSlice
+		}
 	}
 	return renamed
+}
+
+func renameSliceItemKeys(m interface{}, v interface{}) interface{} {
+	rv, rt := getElemValueAndTypeFromSlice(v)
+	fMap, isMap := m.(map[string]interface{})
+	if isMap && rt.Kind() == reflect.Struct {
+		return renameMapKeys(fMap, rv.Interface())
+	}
+	fSlice, isSlice := m.([]interface{})
+	if isSlice && rt.Kind() == reflect.Slice {
+		for j := 0; j < len(fSlice); j++ {
+			fSlice[j] = renameSliceItemKeys(fSlice[j], rv.Interface())
+		}
+	}
+	return m
 }
 
 func Encode(v map[string]interface{}) ([]byte, error) {
@@ -309,6 +353,7 @@ func Decode(data []byte, m *map[string]interface{}) error {
 
 func Convert(m map[string]interface{}, v interface{}) error {
 	renamed := renameMapKeys(m, v)
+	fmt.Println(renamed)
 
 	b, err := json.Marshal(renamed)
 	if err != nil {
