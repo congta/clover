@@ -353,7 +353,6 @@ func Decode(data []byte, m *map[string]interface{}) error {
 
 func Convert(m map[string]interface{}, v interface{}) error {
 	renamed := renameMapKeys(m, v)
-	fmt.Println(renamed)
 
 	b, err := json.Marshal(renamed)
 	if err != nil {
